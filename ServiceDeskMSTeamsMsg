@@ -1,0 +1,35 @@
+import xapi from 'xapi';
+
+xapi.config.set('HttpClient Mode', 'On');
+
+const DIALPAD_ID = 'HelpDesk';
+const INROOMCONTROL_WEBEXCONTROL_PANELID = 'HelpDesk';
+
+const TEAMS_WEBHOOK = '<MS Teams Webhook link copied from the webhook configuration>'
+const CONTENT_TYPE = "Content-Type: application/json";
+
+var systemInfo = {
+    softwareVersion : ''
+    , systemName : ''
+    , softwareReleaseDate : ''
+};
+
+  xapi.config.get('SystemUnit Name').then((value) => {
+    if(value === ''){
+        xapi.status.get('SystemUnit Hardware Module SerialNumber').then((value) => {
+          systemInfo.systemName = value;
+        });
+    }
+    else{
+      systemInfo.systemName = value;
+    }
+  const body = {text: "Help in "+ value};
+/* This is the listener for the in-room control panel button that will trigger the dial panel to appear */
+xapi.event.on('UserInterface Extensions Panel Clicked', (event) => {
+    if(event.PanelId === INROOMCONTROL_WEBEXCONTROL_PANELID){
+        xapi.command('HttpClient Post', { 'Header': [CONTENT_TYPE] , 'Url':TEAMS_WEBHOOK}, JSON.stringify(body));
+        xapi.command("UserInterface Message Alert Display", {Title: "The meetings room support team is comming...",Text: "",Duration: 5,})
+        xapi.command("UserInterface Extensions Panel Close", {})
+    }
+});
+})
